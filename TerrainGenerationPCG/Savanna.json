@@ -1,0 +1,39 @@
+{
+  "BaseHeight": 80,
+  "points": [
+    {
+      "X": 0.70,
+      "Y": 0.20
+    },
+    {
+      "X": 1.0,
+      "Y": 0.20
+    },
+    {
+      "X": 1.0,
+      "Y": 0.45
+    },
+    {
+      "X": 0.70,
+      "Y": 0.40
+    }
+  ],
+  "noiseConfig": {
+    "NoiseType": 0,
+    "FractalType": 1,
+    "FractalOctaves": 3,
+    "FractalLacunarity": 2.0,
+    "FractalGain": 0.5,
+    "Frequency": 0.01,
+    "Seed": 1337,
+    "FractalWeightedStrength": 0.0,
+    "FractalPingPongStrength": 2.0,
+    "DomainWarpType": 0,
+    "DomainWarpFractalType": 5,
+    "DomainWarpAmp": 20.0,
+    "DomainWarpOctaves": 3,
+    "DomainWarpFrequency": 0.1
+  },
+  "Name": "Savanna",
+  "Type": 6
+}

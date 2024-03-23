@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34622.214
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TerrainGenerationPCG", "TerrainGenerationPCG\TerrainGenerationPCG.csproj", "{BBCD4833-7134-4C64-9AEB-B4BA5E5612C8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TerrainGenerationPCG", "TerrainGenerationPCG\TerrainGenerationPCG.csproj", "{BBCD4833-7134-4C64-9AEB-B4BA5E5612C8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NoiseLibrary", "NoiseLibrary\NoiseLibrary.csproj", "{8C6B9582-2FC8-42FF-8EFB-412ED0E58391}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{BBCD4833-7134-4C64-9AEB-B4BA5E5612C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BBCD4833-7134-4C64-9AEB-B4BA5E5612C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BBCD4833-7134-4C64-9AEB-B4BA5E5612C8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C6B9582-2FC8-42FF-8EFB-412ED0E58391}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C6B9582-2FC8-42FF-8EFB-412ED0E58391}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C6B9582-2FC8-42FF-8EFB-412ED0E58391}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C6B9582-2FC8-42FF-8EFB-412ED0E58391}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
