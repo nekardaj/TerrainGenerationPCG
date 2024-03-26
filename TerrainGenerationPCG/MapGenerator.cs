@@ -22,18 +22,21 @@ public class MapGenerator
     public MapGenerator()
     {
         // Deserialize noise configs from JSON files and create instances of noise generators
-        TemperatureConfig = JsonConvert.DeserializeObject<NoiseConfig>(System.IO.File.ReadAllText("TemperatureConfig.json"));
-        PrecipationConfig = JsonConvert.DeserializeObject<NoiseConfig>(System.IO.File.ReadAllText("PrecipationConfig.json"));
+        // use path relative to this assembly
+        string path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+
+        TemperatureConfig = JsonConvert.DeserializeObject<NoiseConfig>(System.IO.File.ReadAllText(path + "\\TemperatureConfig.json"));
+        PrecipationConfig = JsonConvert.DeserializeObject<NoiseConfig>(System.IO.File.ReadAllText(path + "\\PrecipationConfig.json"));
         temperatureNoise = Utils.CreateNoiseFromConfig(TemperatureConfig);
         temperatureNoiseWarp = Utils.CreateDomainWarpFromConfig(TemperatureConfig);
         precipationNoise = Utils.CreateNoiseFromConfig(PrecipationConfig);
         precipationNoiseWarp = Utils.CreateDomainWarpFromConfig(PrecipationConfig);
         WhittakerDiagram = new WhittakerDiagram();
         // Biome borders are chunked so we need to set the frequency to the chunk size
-        temperatureNoise.SetFrequency(TemperatureConfig.Frequency * ChunkSize);
-        precipationNoise.SetFrequency(PrecipationConfig.Frequency * ChunkSize);
-        temperatureNoiseWarp.SetFrequency(TemperatureConfig.Frequency * ChunkSize);
-        precipationNoiseWarp.SetFrequency(PrecipationConfig.Frequency * ChunkSize);
+        //temperatureNoise.SetFrequency(TemperatureConfig.Frequency * ChunkSize);
+        //precipationNoise.SetFrequency(PrecipationConfig.Frequency * ChunkSize);
+        //temperatureNoiseWarp.SetFrequency(TemperatureConfig.Frequency * ChunkSize);
+        //precipationNoiseWarp.SetFrequency(PrecipationConfig.Frequency * ChunkSize);
     }
 
     internal void GenerateBiomeMap(int width, int height, int index)
@@ -120,20 +123,8 @@ public class MapGenerator
             for (int y = 0; y < height; y++)
             {
 
-                var xWarpTemp = (float)(x / ChunkSize);
-                var yWarpTemp = (float)(y / ChunkSize);
-                temperatureNoiseWarp.DomainWarp(ref xWarpTemp, ref yWarpTemp);
-                
-                var xWarpPrec = (float)(x / ChunkSize);
-                var yWarpPrec = (float)(y / ChunkSize);
-                precipationNoiseWarp.DomainWarp(ref xWarpPrec, ref yWarpPrec);
-                
-                temperature[x, y] = (temperatureNoise.GetNoise(xWarpTemp, yWarpTemp) + 1) / 2; // normalize to 0-1
-                precipation[x, y] = (precipationNoise.GetNoise(xWarpPrec, yWarpPrec) + 1) / 2;
+                GetFilteredBiomeAndHeight(x,y).Deconstruct(out biomes[x,y], out heights[x,y]);
 
-                //heights[x, y] = WhittakerDiagram.GetBiome(temperature[x, y], precipation[x, y]).GetHeight(x, y);
-                biomes[x, y] = WhittakerDiagram.GetBiome(temperature[x, y], precipation[x, y]).Type;
-                heights[x, y] = GetHeight(x,y, WhittakerDiagram.GetBiome(temperature[x, y], precipation[x, y]));
                 minHeight = Math.Min(minHeight, heights[x, y]);
                 maxHeight = Math.Max(maxHeight, heights[x, y]);
             }
@@ -149,7 +140,7 @@ public class MapGenerator
                 // convert to HSL and modulate based on height
                 var hsv = Utils.RGBtoHSB(color.R, color.G, color.B);
                 // map to 0-1 and then remap to 0.5-1
-                hsv[2] *= ((((heights[x, y] - minHeight) / 256f) / ((maxHeight - minHeight) / 256f)) * 0.80f + 0.15f);
+                hsv[2] *= ((((heights[x, y] - minHeight) / 256f) / ((maxHeight - minHeight) / 256f)) * 0.80f + 0.20f);
                 //hsv[1] = hsv[1] * (((heights[x,y] - minHeight) / 256f) / ((maxHeight - minHeight) / 256f) + 1) / 2;
                 var rgb = Utils.HSBtoRGB(hsv);
 
@@ -157,8 +148,8 @@ public class MapGenerator
             }
         }
 
-        Utils.SaveNoiseToGrayscaleImage(temperature, $"output\\temperature_{index}.png", false);
-        Utils.SaveNoiseToGrayscaleImage(precipation, $"output\\precipation_{index}.png", false);
+        //Utils.SaveNoiseToGrayscaleImage(temperature, $"output\\temperature_{index}.png", false);
+        //Utils.SaveNoiseToGrayscaleImage(precipation, $"output\\precipation_{index}.png", false);
         Utils.SaveHeightmap(heights, $"output\\heights_{index}.png");
         Utils.SaveNoiseToCSV(heights, $"output\\heights_csv_{index}.csv");
 
@@ -204,124 +195,66 @@ public class MapGenerator
         }
     }
 
-    private const float displacementStep = 6;
+    private const float displacementStep = 5;
     private static List<Vector2> filteringDisplacements = new List<Vector2>()
     {
         displacementStep * new Vector2(1,0), displacementStep * new Vector2(-1, 0) , displacementStep * new Vector2(0, 1) , displacementStep * new Vector2(0, -1),
         displacementStep * new Vector2(0.5f, 0.5f), displacementStep * new Vector2(-0.5f, 0.5f), displacementStep * new Vector2(0.5f, -0.5f), displacementStep * new Vector2(-0.5f, -0.5f)
     };
-    public int GetHeight(int x, int y)
+    /// <summary>
+    /// Computes the biome and height at the given point
+    /// Since the biomes and heights are blended and multiple points are used to compute the both there is little benefit in keeping them separate
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <returns>Computed biome and height of a given point</returns>
+    public Tuple<BiomeType, int> GetFilteredBiomeAndHeight(int x, int y)
     {
-        var xWarpTemp = (float) (x / ChunkSize);
-        var yWarpTemp = (float) (y / ChunkSize);
-        temperatureNoiseWarp.DomainWarp(ref xWarpTemp, ref yWarpTemp);
-        var temperature = (temperatureNoise.GetNoise(xWarpTemp, yWarpTemp) + 1) / 2; // normalize to 0-1
-        
-        var xWarpPrec = (float)(x / ChunkSize);
-        var yWarpPrec = (float)(y / ChunkSize);
-        precipationNoiseWarp.DomainWarp(ref xWarpPrec, ref yWarpPrec);
-        var precipation = (precipationNoise.GetNoise(xWarpPrec, yWarpPrec) + 1) / 2;
-
-        // take a step into four directions from the current point
-        // if the step is less than 8 units, at least two of the points will be in the same chunk
-        // get the biomes for each of the points
-        // find bioms of eight points that are equally distant from the current point
-
         // blend biomes
-        // get the height of the biome
-        // return the height
-        var biome = WhittakerDiagram.GetBiome(temperature, precipation);
+
+        float xWarpTemp = x;
+        float yWarpTemp = y;
+        temperatureNoiseWarp.DomainWarp(ref xWarpTemp,ref yWarpTemp);
+        float xWarpPrec = x;
+        float yWarpPrec = y;
+        precipationNoiseWarp.DomainWarp(ref xWarpPrec, ref yWarpPrec);
+
+        // points used in filtering vote for the biome type
+        int[] BiomeTypeVotes = new int[(int)BiomeType.Count];
+
+        var biome = WhittakerDiagram.GetBiome((temperatureNoise.GetNoise(xWarpTemp, yWarpTemp) + 1) / 2, (precipationNoise.GetNoise(xWarpPrec, yWarpPrec) + 1) / 2);
+        BiomeTypeVotes[(int)biome.Type]++;
+
+        int filteringCount = 1;
+        
         var biomeHeight = biome.GetHeight(x, y);
-
-        // filtering should be method
-
         for (int i = 0; i < filteringDisplacements.Count; i++)
         {
-            xWarpTemp = (x + filteringDisplacements[i].X) / ChunkSize;
-            yWarpTemp = (y + filteringDisplacements[i].Y) / ChunkSize;
+            xWarpTemp = ((float)x + filteringDisplacements[i].X);
+            yWarpTemp = ((float)y + filteringDisplacements[i].Y);
             temperatureNoiseWarp.DomainWarp(ref xWarpTemp, ref yWarpTemp);
             var temperatureTemp = (temperatureNoise.GetNoise(xWarpTemp, yWarpTemp) + 1) / 2; // normalize to 0-1
 
-            xWarpPrec = (x + filteringDisplacements[i].X) / ChunkSize;
-            yWarpPrec = (y + filteringDisplacements[i].Y) / ChunkSize;
+            xWarpPrec = ((float)x + filteringDisplacements[i].X);
+            yWarpPrec = ((float)y + filteringDisplacements[i].Y);
             precipationNoiseWarp.DomainWarp(ref xWarpTemp, ref yWarpTemp);
             var precipationTemp = (precipationNoise.GetNoise(xWarpPrec, yWarpPrec) + 1) / 2;
 
             biome = WhittakerDiagram.GetBiome(temperatureTemp, precipationTemp);
             biomeHeight += biome.GetHeight(x, y);
+            filteringCount++;
         }
-
-        return biomeHeight / (filteringDisplacements.Count + 1); // +1 for the current point
-    }
-
-    /// <summary>
-    /// Gets biome at the given point
-    /// </summary>
-    /// <param name="x"></param>
-    /// <param name="y"></param>
-    /// <returns></returns>
-    public Biome GetBiome(int x, int y)
-    {
-        var xWarpTemp = (float)(x / ChunkSize);
-        var yWarpTemp = (float)(y / ChunkSize);
-        temperatureNoiseWarp.DomainWarp(ref xWarpTemp, ref yWarpTemp);
-        var temperature = (temperatureNoise.GetNoise(xWarpTemp, yWarpTemp) + 1) / 2; // normalize to 0-1
-
-        var xWarpPrec = (float)(x / ChunkSize);
-        var yWarpPrec = (float)(y / ChunkSize);
-        precipationNoiseWarp.DomainWarp(ref xWarpPrec, ref yWarpPrec);
-        var precipation = (precipationNoise.GetNoise(xWarpPrec, yWarpPrec) + 1) / 2;
-
-        var biome = WhittakerDiagram.GetBiome(temperature, precipation);
-        return biome;
-    }
-    /// <summary>
-    /// Gets the height at the given point using known biome
-    /// Biomes are chunked so when we are constructing the chunk we only need to get the biome once
-    /// then we can reuse the biome for all the points in the chunk
-    /// </summary>
-    /// <param name="x"></param>
-    /// <param name="y"></param>
-    /// <param name="biome"></param>
-    /// <returns></returns>
-    public int GetHeight(int x, int y, Biome biome)
-    {
-        // take a step into four directions from the current point
-        // get the biomes for each of the points
-        // we ignore points in the same biome
-
-        // simple filtering does not work
-        
-        var biomeHeight = 2 * biome.GetHeight(x, y);
-
-        int filteringCount = 2;
-        // blend biomes
-
-        float xWarpTemp;
-        float yWarpTemp;
-        float xWarpPrec;
-        float yWarpPrec;
-        for (int i = 0; i < filteringDisplacements.Count; i++)
+        // return biome with the most votes and filtered height
+        int maxVotes = 0;
+        int maxIndex = 0;
+        for (int i = 0; i < BiomeTypeVotes.Length; i++)
         {
-            xWarpTemp = ((float)x / ChunkSize + filteringDisplacements[i].X);
-            yWarpTemp = ((float)y / ChunkSize + filteringDisplacements[i].Y);
-            temperatureNoiseWarp.DomainWarp(ref xWarpTemp, ref yWarpTemp);
-            var temperatureTemp = (temperatureNoise.GetNoise(xWarpTemp, yWarpTemp) + 1) / 2; // normalize to 0-1
-
-            xWarpPrec = ((float)x / ChunkSize + filteringDisplacements[i].X);
-            yWarpPrec = ((float)y / ChunkSize + filteringDisplacements[i].Y);
-            precipationNoiseWarp.DomainWarp(ref xWarpTemp, ref yWarpTemp);
-            var precipationTemp = (precipationNoise.GetNoise(xWarpPrec, yWarpPrec) + 1) / 2;
-
-            var currBiome = WhittakerDiagram.GetBiome(temperatureTemp, precipationTemp);
-            if (currBiome.Type != biome.Type)
+            if (BiomeTypeVotes[i] > maxVotes)
             {
-                biomeHeight += currBiome.GetHeight(x, y);
-                filteringCount++;
+                maxVotes = BiomeTypeVotes[i];
+                maxIndex = i;
             }
         }
-
-        return biomeHeight / filteringCount; // +1 for the current point
-
+        return new Tuple<BiomeType, int>((BiomeType)maxIndex, biomeHeight / filteringCount);
     }
 }

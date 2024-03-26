@@ -15,6 +15,7 @@ namespace TerrainGenerationPCG
     {
         /// <summary>
         /// Saves the noise to a grayscale image
+        /// For testing purposes
         /// </summary>
         /// <param name="noise"></param>
         /// <param name="filename"></param>
@@ -43,7 +44,12 @@ namespace TerrainGenerationPCG
             }
             bmp.Save(filename);
         }
-
+        /// <summary>
+        /// Saves heightmap to a grayscale image
+        /// For testing purposes
+        /// </summary>
+        /// <param name="heightMap"></param>
+        /// <param name="filename"></param>
         public static void SaveHeightmap(int[,] heightMap, string filename)
         {
             int width = heightMap.GetLength(0);
@@ -207,7 +213,7 @@ namespace TerrainGenerationPCG
 
         }
 
-        public static void CreateConfig(string filename)
+        internal static void CreateConfig(string filename)
         {
             NoiseConfig config = new NoiseConfig
             {
@@ -234,7 +240,7 @@ namespace TerrainGenerationPCG
             System.IO.File.WriteAllText(filename, JsonConvert.SerializeObject(config, settings));
         }
 
-        public static void CreateBiomeConfig()
+        internal static void CreateBiomeConfig()
         {
             // to not overwrite the existing files, we will read the existing biomes and save them again
             // which adds new field if they were added keeping the old values
@@ -264,7 +270,7 @@ namespace TerrainGenerationPCG
             Color.DeepSkyBlue,
         };
 
-        public static void SaveMap(int width, int height)
+        internal static void SaveBiomeMap(int width, int height)
         {
             WhittakerDiagram diagram = new WhittakerDiagram();
 
@@ -315,7 +321,7 @@ namespace TerrainGenerationPCG
             {
                 for (int y = 0; y < height; y++)
                 {
-                    heightMap[x, y] = b.GetHeight(x / (float)MapGenerator.ChunkSize, y / (float)MapGenerator.ChunkSize);
+                    heightMap[x, y] = b.GetHeight(x, y);
                 }
             }
             SaveHeightmap(heightMap, "output\\" + biome.ToString() + ".png");

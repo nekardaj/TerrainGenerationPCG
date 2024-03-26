@@ -38,10 +38,12 @@ namespace TerrainGenerationPCG
 
         public WhittakerDiagram()
         {
+            string path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             biomes = new List<Biome>();
             for (int i = 0; i < (int)BiomeType.Count; i++)
             {
-                biomes.Add(JsonConvert.DeserializeObject<Biome>(System.IO.File.ReadAllText(((BiomeType)i).ToString() + ".json")));
+
+                biomes.Add(JsonConvert.DeserializeObject<Biome>(System.IO.File.ReadAllText(path + "\\"+((BiomeType)i).ToString() + ".json")));
             }
         }
 
