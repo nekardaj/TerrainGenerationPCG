@@ -1,5 +1,6 @@
 {
-  "BaseHeight": 80,
+  "BaseHeight": 70,
+  "HeightAmplitude": 5,
   "points": [
     {
       "X": 0.70,
@@ -11,11 +12,11 @@
     },
     {
       "X": 1.0,
-      "Y": 0.95
+      "Y": 1.0
     },
     {
       "X": 0.70,
-      "Y": 0.80
+      "Y": 0.85
     }
   ],
   "noiseConfig": {

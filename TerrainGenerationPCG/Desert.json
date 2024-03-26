@@ -1,5 +1,6 @@
 {
-  "BaseHeight": 80,
+  "BaseHeight": 75,
+  "HeightAmplitude": 10,
   "points": [
     {
       "X": 0.70,
@@ -25,7 +26,7 @@
     "FractalLacunarity": 2.0,
     "FractalGain": 0.5,
     "Frequency": 0.01,
-    "Seed": 1337,
+    "Seed": 1999,
     "FractalWeightedStrength": 0.0,
     "FractalPingPongStrength": 2.0,
     "DomainWarpType": 0,

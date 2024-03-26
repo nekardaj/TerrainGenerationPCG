@@ -1,22 +1,26 @@
 {
-  "BaseHeight": 80,
-  "HeightAmplitude": 5,
+  "BaseHeight": 62,
+  "HeightAmplitude" : 0,
   "points": [
     {
-      "X": 0.40,
-      "Y": 0.55
-    },
-    {
-      "X": 0.70,
+      "X": 0.0,
       "Y": 0.60
     },
     {
-      "X": 0.70,
-      "Y": 0.85
+      "X": 0.20,
+      "Y": 0.60
     },
     {
       "X": 0.40,
       "Y": 0.75
+    },
+    {
+      "X": 0.40,
+      "Y": 1.00
+    },
+    {
+      "X": 0.0,
+      "Y": 1.00
     }
   ],
   "noiseConfig": {
@@ -35,6 +39,6 @@
     "DomainWarpOctaves": 3,
     "DomainWarpFrequency": 0.1
   },
-  "Name": "TropicalSeasonalForest",
-  "Type": 4
+  "Name": "ColdOcean",
+  "Type": 9
 }

@@ -13,26 +13,147 @@ namespace TerrainGenerationPCG
 {
     public class Utils
     {
-        //save the noise to a file as a grayscale image in PNG format
-        public static void SaveNoiseToImage(float[,] noise, string filename)
+        /// <summary>
+        /// Saves the noise to a grayscale image
+        /// </summary>
+        /// <param name="noise"></param>
+        /// <param name="filename"></param>
+        /// <param name="normalize">If true we assume -1 to 1 range and normalize it to 0-1</param>
+        public static void SaveNoiseToGrayscaleImage(float[,] noise, string filename, bool normalize)
         {
             int width = noise.GetLength(0);
             int height = noise.GetLength(1);
-            
+
             Bitmap bmp = new Bitmap(width, height);
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
                 {
-                    byte val = (byte)((noise[x, y] + 1) * 127);
+                    byte val = 0;
+                    if (normalize)
+                    {
+                        val = (byte)((noise[x, y] + 1) * 127);
+                    }
+                    else
+                    {
+                        val = (byte)(noise[x, y] * 255);
+                    }
                     bmp.SetPixel(x, y, Color.FromArgb(val, val, val));
                 }
             }
             bmp.Save(filename);
         }
 
+        public static void SaveHeightmap(int[,] heightMap, string filename)
+        {
+            int width = heightMap.GetLength(0);
+            int height = heightMap.GetLength(1);
+            Bitmap bmp = new Bitmap(width, height);
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    byte val = (byte)(heightMap[x, y]);
+                    bmp.SetPixel(x, y, Color.FromArgb(val, val, val));
+                }
+            }
+            bmp.Save(filename);
+        }
+
+        // Stolen from Java's Color class
+        public static float[] RGBtoHSB(int r, int g, int b)
+        {
+            float[] hsbvals = new float[3];
+            float hue, saturation, brightness;
+            int cmax = (r > g) ? r : g;
+            if (b > cmax) cmax = b;
+            int cmin = (r < g) ? r : g;
+            if (b < cmin) cmin = b;
+
+            brightness = ((float)cmax) / 255.0f;
+            if (cmax != 0)
+                saturation = ((float)(cmax - cmin)) / ((float)cmax);
+            else
+                saturation = 0;
+            if (saturation == 0)
+                hue = 0;
+            else
+            {
+                float redc = ((float)(cmax - r)) / ((float)(cmax - cmin));
+                float greenc = ((float)(cmax - g)) / ((float)(cmax - cmin));
+                float bluec = ((float)(cmax - b)) / ((float)(cmax - cmin));
+                if (r == cmax)
+                    hue = bluec - greenc;
+                else if (g == cmax)
+                    hue = 2.0f + redc - bluec;
+                else
+                    hue = 4.0f + greenc - redc;
+                hue = hue / 6.0f;
+                if (hue < 0)
+                    hue = hue + 1.0f;
+            }
+            hsbvals[0] = hue;
+            hsbvals[1] = saturation;
+            hsbvals[2] = brightness;
+            return hsbvals;
+        }
+        // Stolen from Java's Color class
+        public static float[] HSBtoRGB(float[] hsv)
+        {
+            float hue = hsv[0];
+            float saturation = hsv[1];
+            float brightness = hsv[2];
+            int r = 0, g = 0, b = 0;
+            if (saturation == 0)
+            {
+                r = g = b = (int)(brightness * 255.0f + 0.5f);
+            }
+            else
+            {
+                float h = (hue - (float)Math.Floor(hue)) * 6.0f;
+                float f = h - (float)Math.Floor(h);
+                float p = brightness * (1.0f - saturation);
+                float q = brightness * (1.0f - saturation * f);
+                float t = brightness * (1.0f - (saturation * (1.0f - f)));
+                switch ((int)h)
+                {
+                    case 0:
+                        r = (int)(brightness * 255.0f + 0.5f);
+                        g = (int)(t * 255.0f + 0.5f);
+                        b = (int)(p * 255.0f + 0.5f);
+                        break;
+                    case 1:
+                        r = (int)(q * 255.0f + 0.5f);
+                        g = (int)(brightness * 255.0f + 0.5f);
+                        b = (int)(p * 255.0f + 0.5f);
+                        break;
+                    case 2:
+                        r = (int)(p * 255.0f + 0.5f);
+                        g = (int)(brightness * 255.0f + 0.5f);
+                        b = (int)(t * 255.0f + 0.5f);
+                        break;
+                    case 3:
+                        r = (int)(p * 255.0f + 0.5f);
+                        g = (int)(q * 255.0f + 0.5f);
+                        b = (int)(brightness * 255.0f + 0.5f);
+                        break;
+                    case 4:
+                        r = (int)(t * 255.0f + 0.5f);
+                        g = (int)(p * 255.0f + 0.5f);
+                        b = (int)(brightness * 255.0f + 0.5f);
+                        break;
+                    case 5:
+                        r = (int)(brightness * 255.0f + 0.5f);
+                        g = (int)(p * 255.0f + 0.5f);
+                        b = (int)(q * 255.0f + 0.5f);
+                        break;
+                }
+            }
+            return new float[] { r, g, b };
+        }
+
         // save the noise in CSV format
-        public static void SaveNoiseToCSV(float[,] noise, string filename)
+        public static void SaveNoiseToCSV<T>(T[,] noise, string filename)
         {
             int width = noise.GetLength(0);
             int height = noise.GetLength(1);
@@ -60,8 +181,10 @@ namespace TerrainGenerationPCG
             noise.SetFractalOctaves(config.FractalOctaves);
             noise.SetFractalLacunarity(config.FractalLacunarity);
             noise.SetFractalGain(config.FractalGain);
-            noise.SetFrequency(config.Frequency);
-            noise.SetSeed(config.Seed);
+            noise.SetFrequency(config.Frequency); // scale the frequency by the chunk size to make sure every biome occupies at least one chunk
+            // I think this is better than the possibility of having a biome that is only few blocks big
+            // noise.SetSeed(config.Seed);
+            noise.SetSeed(System.DateTime.Now.Millisecond ^ 0b101001);
             noise.SetFractalWeightedStrength(config.FractalWeightedStrength);
             noise.SetFractalPingPongStrength(config.FractalPingPongStrength);
             return noise;
@@ -73,12 +196,13 @@ namespace TerrainGenerationPCG
         public static FastNoiseLite CreateDomainWarpFromConfig(NoiseConfig config)
         {
             FastNoiseLite noise = new FastNoiseLite();
-            noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
-            noise.SetDomainWarpType(FastNoiseLite.DomainWarpType.OpenSimplex2);
-            noise.SetFractalOctaves(3);
-            noise.SetDomainWarpAmp(30.0f);
-            noise.SetFrequency(0.1f);
-            noise.SetSeed(config.Seed);
+            noise.SetNoiseType(config.NoiseType);
+            noise.SetDomainWarpType(config.DomainWarpType);
+            noise.SetFractalType(FastNoiseLite.FractalType.DomainWarpProgressive);
+            noise.SetFractalOctaves(config.DomainWarpOctaves);
+            noise.SetDomainWarpAmp(config.DomainWarpAmp);
+            noise.SetFrequency(config.DomainWarpFrequency);
+            noise.SetSeed(config.Seed ^ 1010101);
             return noise;
 
         }
@@ -123,20 +247,21 @@ namespace TerrainGenerationPCG
                 };
                 System.IO.File.WriteAllText(biome.Type.ToString() + ".json", JsonConvert.SerializeObject(biome, settings));
             }
-            
         }
 
         public static readonly Color[] BiomeColors = new Color[]
         {
             Color.White,
-            Color.LightGray,
+            Color.DarkGray,
             Color.DarkSlateGray,
-            Color.ForestGreen,
+            Color.DarkGreen,
             Color.LimeGreen,
             Color.Yellow,
             Color.DarkKhaki,
-            Color.DarkGreen,
+            Color.GreenYellow,
             Color.DarkRed,
+            Color.DarkBlue,
+            Color.DeepSkyBlue,
         };
 
         public static void SaveMap(int width, int height)
@@ -165,24 +290,35 @@ namespace TerrainGenerationPCG
                     float temperature = (float)(x) / width;
                     float precipitation = (float)y / height;
                     Biome biome = diagram.GetBiome(temperature, precipitation);
-                    Color color = BiomeColors[(int)biome.Type];
-                    // convert color to HSB
-                    float hue = color.GetHue();
-                    float saturation = color.GetSaturation();
-                    float brightness = color.GetBrightness();
-                    // modify brightness based on the height
-
                     if (biome != null)
                     {
-                        bmp.SetPixel(x, 399 - y, BiomeColors[(int)biome.Type]);
+                        bmp.SetPixel(x, height - y - 1, BiomeColors[(int)biome.Type]);
                     }
                     else
                     {
-                        bmp.SetPixel(x, 399 - y, Color.Pink);
+                        bmp.SetPixel(x, height - y - 1, Color.Pink);
                     }
                 }
             }
 
+        }
+
+        public static void GenerateBiomeHeightmap(BiomeType biome)
+        {
+            WhittakerDiagram diagram = new WhittakerDiagram();
+            Biome b = diagram.GetBiome(biome);
+            int width = 400;
+            int height = 400;
+            Bitmap bmp = new Bitmap(width, height);
+            int[,] heightMap = new int[width, height];
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    heightMap[x, y] = b.GetHeight(x / (float)MapGenerator.ChunkSize, y / (float)MapGenerator.ChunkSize);
+                }
+            }
+            SaveHeightmap(heightMap, "output\\" + biome.ToString() + ".png");
         }
 
         static Utils()

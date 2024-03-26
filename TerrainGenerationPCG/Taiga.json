@@ -1,5 +1,6 @@
 {
-  "BaseHeight": 80,
+  "BaseHeight": 85,
+  "HeightAmplitude": 15,
   "points": [
     {
       "X": 0.30,
@@ -11,11 +12,11 @@
     },
     {
       "X": 0.40,
-      "Y": 0.65
+      "Y": 0.75
     },
     {
       "X": 0.20,
-      "Y": 0.50
+      "Y": 0.60
     }
   ],
   "noiseConfig": {
@@ -25,7 +26,7 @@
     "FractalLacunarity": 2.0,
     "FractalGain": 0.5,
     "Frequency": 0.01,
-    "Seed": 1337,
+    "Seed": 1982,
     "FractalWeightedStrength": 0.0,
     "FractalPingPongStrength": 2.0,
     "DomainWarpType": 0,

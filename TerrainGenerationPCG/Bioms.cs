@@ -10,30 +10,6 @@ using NoiseLibrary;
 
 namespace TerrainGenerationPCG
 {
-    /*
-    public enum BiomeType
-    {
-        Tundra,
-        Taiga,
-        TemperateRainforest,
-        TemperateDeciduousForest,
-        Desert,
-        TropicalSeasonalForest,
-        Grassland,
-        Shrubland,
-        BorealForest,
-        Woodland,
-        Swamp,
-        Ocean,
-        River,
-        Lake,
-        Beach,
-        Ice,
-        Mountain,
-
-    }
-    */
-
     public enum BiomeType
     {
         Tundra, // low temperature, low humidity
@@ -45,6 +21,8 @@ namespace TerrainGenerationPCG
         Savanna, // high temperature, mid humidity
         TropicalRainforest, // high temperature, high humidity
         Mountain, // high temperature, very low humidity - high altitude
+        ColdOcean, // water
+        WarmOcean, // water
         Count
     }
 
@@ -54,7 +32,7 @@ namespace TerrainGenerationPCG
     // the class should be able to return a biome based on the temperature and humidity
     // It should support curved lines, not just straight lines
     // each biom should be represented by a polygon
-    internal class WhittakerDiagram
+    public class WhittakerDiagram
     {
         private List<Biome> biomes;
 
@@ -67,9 +45,43 @@ namespace TerrainGenerationPCG
             }
         }
 
+        public Biome GetBiome(BiomeType biome)
+        {
+            return biomes[(int)biome];
+        }
+
         public Biome GetBiome(float temperature, float humidity)
         {
-            return biomes.FirstOrDefault(b => b.InsideBiome(new Vector2(temperature, humidity)));
+            // find the first biome that contains the point
+            // if none is found, return the closest biome
+            foreach (Biome biome in biomes)
+            {
+                if (biome.InsideBiome(new Vector2(temperature, humidity)))
+                {
+                    return biome;
+                }
+            }
+            // if no biome is found, return the closest one
+            Biome closestBiome = biomes[0];
+            float minDistance = float.MaxValue;
+            foreach (Biome biome in biomes)
+            {
+                float distance = Vector2.Distance(biome.center, new Vector2(temperature, humidity));
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    closestBiome = biome;
+                }
+            }
+            return closestBiome;
+        }
+
+        public void PrintBiomeConfigs()
+        {
+            for (int i = 0; i < biomes.Count; i++)
+            {
+                Console.WriteLine(biomes[i].Type+ " base: " + biomes[i].BaseHeight + " amp: " + biomes[i].HeightAmplitude);
+            }
         }
     }
 
@@ -77,20 +89,23 @@ namespace TerrainGenerationPCG
     /// Biome data class
     /// Every biome will be represented by a convex polygon
     /// </summary>
-    class Biome
+    public class Biome
     {
         public string Name { get; set; }
         public BiomeType Type { get; set; }
         public int BaseHeight;
+        public int HeightAmplitude;
         // temperature and humidity ranges
         // convex polygon of points, they must be ordered clockwise or counterclockwise
         public List<Vector2> points;
         public NoiseConfig noiseConfig;
         private FastNoiseLite noise;
-        
+        private FastNoiseLite noiseWarp;
+
         // as a backup we can store the center of the polygon
         // if point does not belong to any polygon, we can check the distance to the center and choose the closest polygon
-        private Vector2 center;
+        [JsonIgnore]
+        public Vector2 center { get; protected set; }
         // bounding box for acceleration
         private float MinX;
         private float MaxX;
@@ -113,6 +128,7 @@ namespace TerrainGenerationPCG
         public void OnDeserialized(StreamingContext context)
         {
             noise = Utils.CreateNoiseFromConfig(noiseConfig);
+            noiseWarp = Utils.CreateDomainWarpFromConfig(noiseConfig);
             center = new Vector2(points.Average(p => p.X), points.Average(p => p.Y));
             MinX = points.Min(p => p.X);
             MaxX = points.Max(p => p.X);
@@ -170,8 +186,18 @@ namespace TerrainGenerationPCG
             return left == 0 || right == 0;
         }
 
-        
-
-
+        /// <summary>
+        /// Gets height of the biome at the given point
+        /// Coordinates are cast to float to match the noise function signature
+        /// Does not do any chunking, the caller should handle it
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
+        public int GetHeight(float x, float y)
+        {
+            noiseWarp.DomainWarp(ref x, ref y);
+            return BaseHeight + (int)(HeightAmplitude * noise.GetNoise(x,y));
+        }
     }
 }

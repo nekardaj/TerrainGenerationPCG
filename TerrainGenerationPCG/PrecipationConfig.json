@@ -1,0 +1,16 @@
+{
+  "NoiseType": 0,
+  "FractalType": 1,
+  "FractalOctaves": 3,
+  "FractalLacunarity": 2.0,
+  "FractalGain": 0.5,
+  "Frequency": 0.004,
+  "Seed": 1457,
+  "FractalWeightedStrength": 0.05,
+  "FractalPingPongStrength": 2.0,
+  "DomainWarpType": 0,
+  "DomainWarpFractalType": 5,
+  "DomainWarpAmp": 10.0,
+  "DomainWarpOctaves": 3,
+  "DomainWarpFrequency": 0.01
+}
