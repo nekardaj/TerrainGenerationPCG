@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using NoiseLibrary;
-using System.Drawing.Drawing2D;
 using System.Numerics;
 using Newtonsoft.Json;
 
@@ -13,59 +12,6 @@ namespace TerrainGenerationPCG
 {
     public class Utils
     {
-        /// <summary>
-        /// Saves the noise to a grayscale image
-        /// For testing purposes
-        /// </summary>
-        /// <param name="noise"></param>
-        /// <param name="filename"></param>
-        /// <param name="normalize">If true we assume -1 to 1 range and normalize it to 0-1</param>
-        public static void SaveNoiseToGrayscaleImage(float[,] noise, string filename, bool normalize)
-        {
-            int width = noise.GetLength(0);
-            int height = noise.GetLength(1);
-
-            Bitmap bmp = new Bitmap(width, height);
-            for (int x = 0; x < width; x++)
-            {
-                for (int y = 0; y < height; y++)
-                {
-                    byte val = 0;
-                    if (normalize)
-                    {
-                        val = (byte)((noise[x, y] + 1) * 127);
-                    }
-                    else
-                    {
-                        val = (byte)(noise[x, y] * 255);
-                    }
-                    bmp.SetPixel(x, y, Color.FromArgb(val, val, val));
-                }
-            }
-            bmp.Save(filename);
-        }
-        /// <summary>
-        /// Saves heightmap to a grayscale image
-        /// For testing purposes
-        /// </summary>
-        /// <param name="heightMap"></param>
-        /// <param name="filename"></param>
-        public static void SaveHeightmap(int[,] heightMap, string filename)
-        {
-            int width = heightMap.GetLength(0);
-            int height = heightMap.GetLength(1);
-            Bitmap bmp = new Bitmap(width, height);
-            for (int x = 0; x < width; x++)
-            {
-                for (int y = 0; y < height; y++)
-                {
-                    byte val = (byte)(heightMap[x, y]);
-                    bmp.SetPixel(x, y, Color.FromArgb(val, val, val));
-                }
-            }
-            bmp.Save(filename);
-        }
-
         // Stolen from Java's Color class
         public static float[] RGBtoHSB(int r, int g, int b)
         {
@@ -98,11 +44,13 @@ namespace TerrainGenerationPCG
                 if (hue < 0)
                     hue = hue + 1.0f;
             }
+
             hsbvals[0] = hue;
             hsbvals[1] = saturation;
             hsbvals[2] = brightness;
             return hsbvals;
         }
+
         // Stolen from Java's Color class
         public static float[] HSBtoRGB(float[] hsv)
         {
@@ -155,6 +103,7 @@ namespace TerrainGenerationPCG
                         break;
                 }
             }
+
             return new float[] { r, g, b };
         }
 
@@ -174,8 +123,10 @@ namespace TerrainGenerationPCG
                         sb.Append(",");
                     }
                 }
+
                 sb.AppendLine();
             }
+
             System.IO.File.WriteAllText(filename, sb.ToString());
         }
 
@@ -187,7 +138,8 @@ namespace TerrainGenerationPCG
             noise.SetFractalOctaves(config.FractalOctaves);
             noise.SetFractalLacunarity(config.FractalLacunarity);
             noise.SetFractalGain(config.FractalGain);
-            noise.SetFrequency(config.Frequency); // scale the frequency by the chunk size to make sure every biome occupies at least one chunk
+            noise.SetFrequency(config
+                .Frequency); // scale the frequency by the chunk size to make sure every biome occupies at least one chunk
             // I think this is better than the possibility of having a biome that is only few blocks big
             // noise.SetSeed(config.Seed);
             noise.SetSeed(System.DateTime.Now.Millisecond ^ 0b101001);
@@ -195,6 +147,7 @@ namespace TerrainGenerationPCG
             noise.SetFractalPingPongStrength(config.FractalPingPongStrength);
             return noise;
         }
+
         /// <summary>
         /// The library advises to use a separate instance for the configuration of the domain warp
         /// This allows having different settings for the domain warp and the noise itself
@@ -246,12 +199,14 @@ namespace TerrainGenerationPCG
             // which adds new field if they were added keeping the old values
             for (int i = (int)0; i < (int)BiomeType.Count; i++)
             {
-                Biome biome = JsonConvert.DeserializeObject<Biome>(System.IO.File.ReadAllText(((BiomeType)i).ToString()));
+                Biome biome =
+                    JsonConvert.DeserializeObject<Biome>(System.IO.File.ReadAllText(((BiomeType)i).ToString()));
                 JsonSerializerSettings settings = new JsonSerializerSettings
                 {
                     Formatting = Formatting.Indented
                 };
-                System.IO.File.WriteAllText(biome.Type.ToString() + ".json", JsonConvert.SerializeObject(biome, settings));
+                System.IO.File.WriteAllText(biome.Type.ToString() + ".json",
+                    JsonConvert.SerializeObject(biome, settings));
             }
         }
 
@@ -270,94 +225,12 @@ namespace TerrainGenerationPCG
             Color.DeepSkyBlue,
         };
 
-        internal static void SaveBiomeMap(int width, int height)
-        {
-            WhittakerDiagram diagram = new WhittakerDiagram();
-
-            Bitmap bmp = new Bitmap(width, height);
-            int[,] heightMap = new int[width, height];
-            BiomeType[,] biomeMap = new BiomeType[width, height];
-            for (int x = 0; x < width; x++)
-            {
-                for (int y = 0; y < height; y++)
-                {
-                    float temperature = (float)(x) / width;
-                    float precipitation = (float)y / height;
-                    Biome biome = diagram.GetBiome(temperature, precipitation);
-                    heightMap[x, y] = biome.BaseHeight;
-                    biomeMap[x, y] = biome.Type;
-                }
-            }
-
-            for (int x = 0; x < width; x++)
-            {
-                for (int y = 0; y < height; y++)
-                {
-                    float temperature = (float)(x) / width;
-                    float precipitation = (float)y / height;
-                    Biome biome = diagram.GetBiome(temperature, precipitation);
-                    if (biome != null)
-                    {
-                        bmp.SetPixel(x, height - y - 1, BiomeColors[(int)biome.Type]);
-                    }
-                    else
-                    {
-                        bmp.SetPixel(x, height - y - 1, Color.Pink);
-                    }
-                }
-            }
-
-        }
-
-        public static void GenerateBiomeHeightmap(BiomeType biome)
-        {
-            WhittakerDiagram diagram = new WhittakerDiagram();
-            Biome b = diagram.GetBiome(biome);
-            int width = 400;
-            int height = 400;
-            Bitmap bmp = new Bitmap(width, height);
-            int[,] heightMap = new int[width, height];
-            for (int x = 0; x < width; x++)
-            {
-                for (int y = 0; y < height; y++)
-                {
-                    heightMap[x, y] = b.GetHeight(x, y);
-                }
-            }
-            SaveHeightmap(heightMap, "output\\" + biome.ToString() + ".png");
-        }
-
         static Utils()
         {
             if (BiomeColors.Length != (int)BiomeType.Count)
             {
                 throw new Exception("BiomeColors array must have the same length as the number of biomes");
             }
-        }
-
-        // testing function that creates map of precipitation x temperature -> biome
-        public static void CreateBiomeMap()
-        {
-            WhittakerDiagram diagram = new WhittakerDiagram();
-            Bitmap bmp = new Bitmap(400, 400);
-            for (int x = 0; x < 400; x++)
-            {
-                for (int y = 0; y < 400; y++)
-                {
-                    float temperature = (float)(x) / 400;
-                    float precipitation = (float)y / 400;
-                    Biome biome = diagram.GetBiome(temperature, precipitation);
-                    if (biome != null)
-                    {
-                        bmp.SetPixel(x, 399-y, BiomeColors[(int)biome.Type]);
-                    }
-                    else
-                    {
-                        bmp.SetPixel(x, 399-y, Color.Pink);
-                    }
-                }
-            }
-            bmp.Save("biomeMap.png");
         }
 
     }
@@ -379,8 +252,7 @@ namespace TerrainGenerationPCG
         public FastNoiseLite.DomainWarpType DomainWarpType { get; set; }
         public FastNoiseLite.FractalType DomainWarpFractalType { get; set; }
         public float DomainWarpAmp { get; set; }
-        public int DomainWarpOctaves{ get; set;}
+        public int DomainWarpOctaves { get; set; }
         public float DomainWarpFrequency { get; set; }
     }
-
 }

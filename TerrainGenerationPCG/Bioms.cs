@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using NoiseLibrary;
+using UnityEngine;
+using Vector2 = System.Numerics.Vector2;
 
 namespace TerrainGenerationPCG
 {
@@ -38,7 +39,7 @@ namespace TerrainGenerationPCG
 
         public WhittakerDiagram()
         {
-            string path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            string path = Application.dataPath + "\\Scripts\\TerrainGeneration\\TerrainGenerationPCG";
             biomes = new List<Biome>();
             for (int i = 0; i < (int)BiomeType.Count; i++)
             {
