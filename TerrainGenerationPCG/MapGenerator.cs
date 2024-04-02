@@ -51,7 +51,7 @@ namespace TerrainGenerationPCG
         }
 
 
-        private const float displacementStep = 5;
+        private const float displacementStep = 7;
 
         private static List<Vector2> filteringDisplacements = new List<Vector2>()
         {
@@ -109,6 +109,7 @@ namespace TerrainGenerationPCG
             // return biome with the most votes and filtered height
             int maxVotes = 0;
             int maxIndex = 0;
+
             for (int i = 0; i < BiomeTypeVotes.Length; i++)
             {
                 if (BiomeTypeVotes[i] > maxVotes)
