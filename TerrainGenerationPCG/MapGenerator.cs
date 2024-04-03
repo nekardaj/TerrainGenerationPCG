@@ -24,6 +24,8 @@ namespace TerrainGenerationPCG
         private FastNoiseLite precipationNoise;
         private FastNoiseLite precipationNoiseWarp;
 
+        public const int SeaLevel = 62;
+
         public const int ChunkSize = 16;
 
         public MapGenerator()
@@ -103,10 +105,12 @@ namespace TerrainGenerationPCG
 
                 biome = WhittakerDiagram.GetBiome(temperatureTemp, precipationTemp);
                 biomeHeight += biome.GetHeight(x, y);
+                BiomeTypeVotes[(int)biome.Type]++;
                 filteringCount++;
             }
 
             // return biome with the most votes and filtered height
+            
             int maxVotes = 0;
             int maxIndex = 0;
 
@@ -116,6 +120,24 @@ namespace TerrainGenerationPCG
                 {
                     maxVotes = BiomeTypeVotes[i];
                     maxIndex = i;
+                }
+            }
+
+            // if the height is above the sea level return next most frequent biome
+            // since this doesnt happen often, doing another loop should be ok
+            if (((BiomeType)maxIndex == BiomeType.ColdOcean || (BiomeType)maxIndex == BiomeType.WarmOcean) && biomeHeight / filteringCount > SeaLevel)
+            {
+                maxVotes = 0;
+                BiomeTypeVotes[(int)BiomeType.WarmOcean] = 0;
+                BiomeTypeVotes[(int)BiomeType.ColdOcean] = 0;
+
+                for (int i = 0; i < BiomeTypeVotes.Length; i++)
+                {
+                    if (BiomeTypeVotes[i] > maxVotes)
+                    {
+                        maxVotes = BiomeTypeVotes[i];
+                        maxIndex = i;
+                    }
                 }
             }
 
